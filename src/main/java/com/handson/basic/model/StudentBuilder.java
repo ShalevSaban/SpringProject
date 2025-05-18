@@ -2,10 +2,7 @@ package com.handson.basic.model;
 
 import org.hibernate.validator.constraints.Length;
 
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
+import javax.validation.constraints.*;
 import java.util.Date;
 
 public final class StudentBuilder {
@@ -17,6 +14,8 @@ public final class StudentBuilder {
     private @Min(30) @Max(110) Double graduationScore;
     private @Length(max = 20) String phone;
     private @Length(max = 500) String profilePicture;
+
+    private String email;
 
     private StudentBuilder() {
     }
@@ -60,6 +59,11 @@ public final class StudentBuilder {
         return this;
     }
 
+    public StudentBuilder email(String email) {
+        this.email = email;
+        return this;
+    }
+
     public StudentBuilder profilePicture(String profilePicture) {
         this.profilePicture = profilePicture;
         return this;
@@ -74,6 +78,7 @@ public final class StudentBuilder {
         student.setSatScore(satScore);
         student.setGraduationScore(graduationScore);
         student.setPhone(phone);
+        student.setEmail(email);
         student.setProfilePicture(profilePicture);
         return student;
     }

@@ -31,11 +31,20 @@ public class StudentIn implements Serializable {
     @Length(max = 20)
     private String phone;
 
+    private String email;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public Student toStudent() {
         return aStudent().createdAt(Dates.nowUTC()).birthDate(Dates.atUtc(birthDate)).fullname(fullname)
                 .satScore(satScore).graduationScore(graduationScore)
-                .phone(phone)
+                .phone(phone).email(email)
                 .build();
     }
 
@@ -85,6 +94,7 @@ public class StudentIn implements Serializable {
         student.setSatScore(satScore);
         student.setGraduationScore(graduationScore);
         student.setPhone(phone);
+        student.setEmail(email);
     }
 
 }

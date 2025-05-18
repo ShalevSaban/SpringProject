@@ -31,6 +31,16 @@ public class StudentOut {
     private String phone;
     private String profilepicture;
 
+    private String email;
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
     public Double getAvgscore() {
         return avgscore;
     }
@@ -46,6 +56,7 @@ public class StudentOut {
         res.satscore = student.getSatScore();
         res.graduationscore = student.getGraduationScore();
         res.phone = student.getPhone();
+        res.email = student.getEmail();
         res.profilepicture = awsService.generateLink(student.getProfilePicture());
         res.avgscore = null;
         return res;

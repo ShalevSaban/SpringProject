@@ -7,9 +7,12 @@ import com.handson.basic.model.*;
 
 import com.handson.basic.repo.StudentService;
 import com.handson.basic.util.AWSService;
+import com.handson.basic.util.EmailService;
+import com.handson.basic.util.SmsService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
+import org.apache.commons.collections4.IteratorUtils;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,6 +32,7 @@ import static com.handson.basic.util.FPS.FPSBuilder.aFPS;
 import static com.handson.basic.util.FPSCondition.FPSConditionBuilder.aFPSCondition;
 import static com.handson.basic.util.FPSField.FPSFieldBuilder.aFPSField;
 import static com.handson.basic.util.Strings.likeLowerOrNull;
+import static org.apache.logging.log4j.util.Strings.isEmpty;
 
 
 @RestController
@@ -47,7 +51,51 @@ public class StudentsController {
     @Autowired
     AWSService awsService;
 
+    @Autowired
+    SmsService smsService;
 
+    @Autowired
+    private EmailService emailService;
+
+
+
+    @PostMapping("/students/{id}/sendEmail")
+    public ResponseEntity<?> sendEmailToStudent(@PathVariable Long id,
+                                                @RequestParam String subject,
+                                                @RequestParam String body) {
+        var studentOpt = studentService.findById(id);
+        if (studentOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Student with id " + id + " not found");
+        }
+
+        Student student = studentOpt.get();
+        if (student.getEmail() == null || student.getEmail().isBlank()) {
+            return ResponseEntity.badRequest().body("Student does not have an email address");
+        }
+
+        try {
+            emailService.sendSimpleEmail(student.getEmail(), subject, body);
+            return ResponseEntity.ok("Email sent to " + student.getEmail());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to send email: " + e.getMessage());
+        }
+    }
+
+
+    @RequestMapping(value = "/sms/all", method = RequestMethod.POST)
+    public ResponseEntity<?> smsAll(@RequestParam String text)
+    {
+        new Thread(()-> {
+            IteratorUtils.toList(studentService.all().iterator())
+                    .parallelStream()
+                    .map(student -> student.getPhone())
+                    .filter(phone -> !isEmpty(phone))
+                    .forEach(phone -> smsService.send(text, phone));
+        }).start();
+        return new ResponseEntity<>("SENDING", HttpStatus.OK);
+    }
     @RequestMapping(value = "/{id}/image", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ApiOperation(value = "Upload a student's profile image")
     @ApiResponses(value = {
@@ -110,6 +158,7 @@ public class StudentsController {
                         aFPSField().field("s.sat_score").alias("satscore").build(),
                         aFPSField().field("s.graduation_score").alias("graduationscore").build(),
                         aFPSField().field("s.phone").alias("phone").build(),
+                        aFPSField().field("s.email").alias("email").build(),
                         aFPSField().field("s.profile_picture").alias("profilepicture").build(),
                         aFPSField().field("(select avg(sg.course_score) from  student_grade sg where sg.student_id = s.id ) ").alias("avgscore").build()
                 ))

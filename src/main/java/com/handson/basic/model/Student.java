@@ -58,6 +58,15 @@ public class Student implements Serializable {
     @Length(max = 20)
     private String phone;
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    private String email;
     @Length(max = 500)
     private String profilePicture;
 
