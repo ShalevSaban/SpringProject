@@ -2,11 +2,13 @@ package com.handson.basic.model;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.handson.basic.util.AWSService;
 
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.SqlResultSetMapping;
-import java.sql.Date;
+import java.util.Date;
+
 
 @Entity
 @SqlResultSetMapping(name = "StudentOut")
@@ -34,6 +36,22 @@ public class StudentOut {
     }
 
     private Double avgscore;
+
+    public static StudentOut of(Student student, AWSService awsService) {
+        StudentOut res = new StudentOut();
+        res.id = student.getId();
+        res.createdat = student.getCreatedAt();
+        res.fullname = student.getFullname();
+        res.birthdate = student.getBirthDate();
+        res.satscore = student.getSatScore();
+        res.graduationscore = student.getGraduationScore();
+        res.phone = student.getPhone();
+        res.profilepicture = awsService.generateLink(student.getProfilePicture());
+        res.avgscore = null;
+        return res;
+    }
+
+
 
     // === Getters ===
 

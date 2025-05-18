@@ -6,12 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.handson.basic.model.*;
 
 import com.handson.basic.repo.StudentService;
+import com.handson.basic.util.AWSService;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.joda.time.LocalDate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.persistence.EntityManager;
 import javax.validation.constraints.Min;
@@ -37,6 +43,53 @@ public class StudentsController {
 
     @Autowired
     ObjectMapper om;
+
+    @Autowired
+    AWSService awsService;
+
+
+    @RequestMapping(value = "/{id}/image", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ApiOperation(value = "Upload a student's profile image")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Image uploaded successfully"),
+            @ApiResponse(code = 400, message = "Missing or invalid image"),
+            @ApiResponse(code = 404, message = "Student not found"),
+            @ApiResponse(code = 500, message = "Internal server error")
+    })
+    public ResponseEntity<?> uploadStudentImage(
+            @PathVariable Long id,
+            @RequestPart("image") MultipartFile image) {
+
+        // בדיקת קלט
+        if (image == null || image.isEmpty()) {
+            return ResponseEntity.badRequest().body("Missing image file");
+        }
+
+        // שליפת הסטודנט
+        Optional<Student> dbStudent = studentService.findById(id);
+        if (dbStudent.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student with id " + id + " not found");
+        }
+
+        // נתיב ל-S3
+        String bucketPath = "apps/shalev/student-" + id + ".png";
+
+        // ניסיון להעלות את הקובץ
+        try {
+            awsService.putInBucket(image, bucketPath);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Image upload failed: " + e.getMessage());
+        }
+
+        // עדכון האובייקט בבסיס נתונים
+        Student student = dbStudent.get();
+        student.setProfilePicture(bucketPath);
+        Student updatedStudent = studentService.save(student);
+
+        // החזרת התשובה עם קישור לתמונה
+        return ResponseEntity.ok(StudentOut.of(updatedStudent, awsService));
+    }
 
     @RequestMapping(value = "", method = RequestMethod.GET)
     public ResponseEntity<PaginationAndList> search(@RequestParam(required = false) String fullName,
