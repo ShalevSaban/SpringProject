@@ -97,49 +97,17 @@ public class StudentsController {
         }).start();
         return new ResponseEntity<>("SENDING", HttpStatus.OK);
     }
-    @RequestMapping(value = "/{id}/image", method = RequestMethod.PUT, consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @ApiOperation(value = "Upload a student's profile image")
-    @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Image uploaded successfully"),
-            @ApiResponse(code = 400, message = "Missing or invalid image"),
-            @ApiResponse(code = 404, message = "Student not found"),
-            @ApiResponse(code = 500, message = "Internal server error")
-    })
-    public ResponseEntity<?> uploadStudentImage(
-            @PathVariable Long id,
-            @RequestPart("image") MultipartFile image) {
-
-        // בדיקת קלט
-        if (image == null || image.isEmpty()) {
-            return ResponseEntity.badRequest().body("Missing image file");
-        }
-
-        // שליפת הסטודנט
+    @RequestMapping(value = "/{id}/image", method = RequestMethod.PUT)
+    public ResponseEntity<?> uploadStudentImage(@PathVariable Long id,  @RequestParam("image") MultipartFile image)
+    {
         Optional<Student> dbStudent = studentService.findById(id);
-        if (dbStudent.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Student with id " + id + " not found");
-        }
-
-        // נתיב ל-S3
-        String bucketPath = "apps/shalev/student-" + id + ".png";
-
-        // ניסיון להעלות את הקובץ
-        try {
-            awsService.putInBucket(image, bucketPath);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Image upload failed: " + e.getMessage());
-        }
-
-        // עדכון האובייקט בבסיס נתונים
-        Student student = dbStudent.get();
-        student.setProfilePicture(bucketPath);
-        Student updatedStudent = studentService.save(student);
-
-        // החזרת התשובה עם קישור לתמונה
-        return ResponseEntity.ok(StudentOut.of(updatedStudent, awsService));
+        if (dbStudent.isEmpty()) throw new RuntimeException("Student with id: " + id + " not found");
+        String bucketPath = "apps/shalev/student-" +  id + ".png" ;
+        awsService.putInBucket(image, bucketPath);
+        dbStudent.get().setProfilePicture(bucketPath);
+        Student updatedStudent = studentService.save(dbStudent.get());
+        return new ResponseEntity<>(StudentOut.of(updatedStudent, awsService) , HttpStatus.OK);
     }
-
     @RequestMapping(value = "", method = RequestMethod.GET)
     public ResponseEntity<PaginationAndList> search(@RequestParam(required = false) String fullName,
                                                     @RequestParam(required = false) @DateTimeFormat(pattern = "yyyy-MM-dd") LocalDate fromBirthDate,
