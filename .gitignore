@@ -25,3 +25,5 @@ hs_err_pid*
 src/main/resources/application.properties
 
 /root/work/shalevs-basicSpring/README.md
+
+target/test-classes/application-test.properties
