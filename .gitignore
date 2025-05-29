@@ -27,3 +27,11 @@ src/main/resources/application.properties
 /root/work/shalevs-basicSpring/README.md
 
 target/test-classes/application-test.properties
+
+/root/work/shalevs-basicSpring/one_to_many-grades.patch
+
+/root/work/shalevs-basicSpring/jwt_patch.patch
+
+/root/work/shalevs-basicSpring/exception_handling.patch
+
+/root/work/shalevs-basicSpring/aws_s3_files.patch
